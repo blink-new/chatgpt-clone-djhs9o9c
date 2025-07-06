@@ -66,9 +66,18 @@ function App() {
         [user!.id]
       )
       
-      const formattedConversations = result.map((row: Record<string, unknown>) => ({
+      type SqlRow = Record<string, unknown>
+      const rows: SqlRow[] = Array.isArray(result)
+        ? (result as SqlRow[])
+        : ((result as { data?: SqlRow[]; rows?: SqlRow[] }).data ?? (result as { rows?: SqlRow[] }).rows ?? [])
+      
+      const formattedConversations: Conversation[] = rows.map((row) => ({
         ...row,
-        messages: JSON.parse(row.messages as string || '[]')
+        // `messages` might already be an array; only JSON.parse if it's a string
+        messages:
+          typeof row.messages === 'string'
+            ? (JSON.parse(row.messages || '[]') as Message[])
+            : ((row.messages as Message[]) ?? []),
       }))
       
       setConversations(formattedConversations)
